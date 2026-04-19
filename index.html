@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<meta name="theme-color" content="#E76F51" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="小記帳" />
+<link rel="manifest" href="./manifest.json" />
+<link rel="apple-touch-icon" href="./icon-192.png" />
+<link rel="icon" type="image/png" href="./icon-192.png" />
+<title>小記帳</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@500;700&family=Noto+Sans+TC:wght@400;500;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body {
+  font-family: "Noto Sans TC", "PingFang TC", -apple-system, BlinkMacSystemFont, sans-serif;
+  background: linear-gradient(180deg, #FAF7F2 0%, #F5EFE6 100%);
+  min-height: 100vh;
+  color: #264653;
+  -webkit-font-smoothing: antialiased;
+}
+button { font-family: inherit; cursor: pointer; border: none; background: none; }
+input { font-family: inherit; }
+input[type=number]::-webkit-outer-spin-button,
+input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+input[type=number] { -moz-appearance: textfield; }
+
+.serif { font-family: "Noto Serif TC", serif; }
+.mono { font-family: "JetBrains Mono", monospace; }
+
+.app-wrap {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 24px 20px 96px;
+  background-image:
+    radial-gradient(circle at 20% 30%, rgba(231, 111, 81, 0.03) 0px, transparent 50%),
+    radial-gradient(circle at 80% 70%, rgba(42, 157, 143, 0.03) 0px, transparent 50%);
+}
+
+.header { margin-bottom: 20px; }
+.header-row { display: flex; justify-content: space-between; align-items: baseline; }
+.title { font-family: "Noto Serif TC", serif; font-size: 30px; font-weight: 700; letter-spacing: -0.02em; color: #264653; }
+.date-label { font-family: "JetBrains Mono", monospace; font-size: 12px; color: #8D99AE; }
+.divider {
+  height: 1px;
+  margin-top: 12px;
+  background: linear-gradient(90deg, #E76F51 0%, transparent 100%);
+}
+
+.card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 3px rgba(38, 70, 83, 0.06), 0 8px 24px rgba(38, 70, 83, 0.04);
+  border: 1px solid rgba(38, 70, 83, 0.06);
+}
+
+.view-switch {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 12px;
+  background: #F5EFE6;
+  margin-bottom: 16px;
+}
+.view-btn {
+  flex: 1;
+  padding: 8px 0;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #8D99AE;
+  transition: all 0.2s;
+}
+.view-btn.active {
+  background: #fff;
+  color: #E76F51;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+.summary-label { font-size: 12px; color: #8D99AE; margin-bottom: 4px; }
+.summary-amount { display: flex; align-items: baseline; gap: 8px; }
+.currency { font-family: "JetBrains Mono", monospace; font-size: 12px; color: #E76F51; }
+.total { font-family: "Noto Serif TC", serif; font-size: 36px; font-weight: 700; color: #264653; }
+.summary-detail { margin-top: 8px; font-size: 12px; color: #8D99AE; }
+.summary-detail strong { font-family: "JetBrains Mono", monospace; font-weight: 500; color: #264653; }
+
+.tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+.tab-btn {
+  flex: 1;
+  padding: 10px 0;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  background: #fff;
+  color: #264653;
+  border: 1px solid rgba(38, 70, 83, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.2s;
+}
+.tab-btn.active { background: #264653; color: #fff; border-color: #264653; }
+.tab-btn svg { width: 15px; height: 15px; }
+
+.voice-card { text-align: center; padding: 24px; }
+.mic-wrap { position: relative; display: inline-block; margin-bottom: 12px; }
+.mic-btn {
+  position: relative;
+  width: 80px; height: 80px;
+  border-radius: 50%;
+  background: #264653;
+  color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 4px 12px rgba(38, 70, 83, 0.2);
+  transition: transform 0.1s;
+  z-index: 2;
+}
+.mic-btn:active { transform: scale(0.95); }
+.mic-btn.listening { background: #E76F51; }
+.mic-btn svg { width: 28px; height: 28px; }
+.pulse-ring {
+  position: absolute; inset: 0;
+  border-radius: 50%;
+  background: #E76F51;
+  animation: pulse-ring 1.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+}
+@keyframes pulse-ring {
+  0% { transform: scale(1); opacity: 0.6; }
+  100% { transform: scale(1.8); opacity: 0; }
+}
+.voice-status { font-size: 14px; font-weight: 500; color: #264653; }
+.voice-hint { font-size: 12px; color: #8D99AE; margin-top: 4px; }
+.voice-heard {
+  display: inline-block;
+  margin-top: 12px;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 12px;
+  padding: 6px 12px;
+  background: #F5EFE6;
+  color: #2A9D8F;
+  border-radius: 8px;
+}
+.voice-error {
+  margin-top: 12px;
+  font-size: 12px;
+  padding: 8px 12px;
+  background: #FDF0EC;
+  color: #E76F51;
+  border-radius: 8px;
+}
+
+.input-row { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.amount-input {
+  flex: 1;
+  font-family: "Noto Serif TC", serif;
+  font-size: 24px;
+  font-weight: 700;
+  color: #264653;
+  background: transparent;
+  border: none;
+  outline: none;
+  min-width: 0;
+}
+.note-input {
+  width: 100%;
+  font-size: 14px;
+  color: #264653;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgba(38, 70, 83, 0.1);
+  padding-bottom: 8px;
+  outline: none;
+  margin-bottom: 12px;
+}
+
+.cat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.cat-btn {
+  padding: 8px 0;
+  border-radius: 12px;
+  font-size: 12px;
+  background: #F5EFE6;
+  color: #264653;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  transition: all 0.2s;
+}
+.cat-emoji { font-size: 20px; line-height: 1; }
+
+.submit-btn {
+  width: 100%;
+  padding: 14px 0;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 14px;
+  background: #E76F51;
+  color: #fff;
+  transition: transform 0.1s;
+}
+.submit-btn:active { transform: scale(0.98); }
+.submit-btn:disabled { opacity: 0.4; }
+
+.chart-card { padding: 16px; }
+.chart-title-row { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.chart-title-row svg { width: 14px; height: 14px; }
+.chart-title { font-size: 14px; font-weight: 600; color: #264653; }
+
+.legend { margin-top: 8px; }
+.legend-item { display: flex; justify-content: space-between; align-items: center; font-size: 12px; padding: 4px 0; }
+.legend-left { display: flex; align-items: center; gap: 8px; }
+.legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+.legend-right { display: flex; align-items: center; gap: 8px; }
+.legend-amount { font-family: "JetBrains Mono", monospace; color: #264653; }
+.legend-percent { font-family: "JetBrains Mono", monospace; font-size: 12px; color: #8D99AE; }
+
+.empty { padding: 48px 20px; text-align: center; }
+.empty-emoji { font-size: 32px; margin-bottom: 8px; }
+.empty-text { font-size: 14px; color: #8D99AE; }
+
+.list-item { display: flex; align-items: center; gap: 12px; padding: 12px 16px; }
+.list-item + .list-item { border-top: 1px solid rgba(38, 70, 83, 0.05); }
+.list-icon { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+.list-body { flex: 1; min-width: 0; }
+.list-title { font-size: 14px; font-weight: 500; color: #264653; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.list-meta { font-family: "JetBrains Mono", monospace; font-size: 12px; color: #8D99AE; }
+.list-amount { font-family: "Noto Serif TC", serif; font-weight: 700; color: #264653; }
+.delete-btn { padding: 6px; opacity: 0.4; color: #E76F51; transition: opacity 0.2s; }
+.delete-btn:active { opacity: 1; }
+.delete-btn svg { width: 14px; height: 14px; }
+
+.list-card { padding: 0; overflow: hidden; }
+
+.footer-hint { text-align: center; font-size: 12px; color: #B8B0A3; margin-top: 24px; }
+
+.slide-up { animation: slide-up 0.25s ease-out; }
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.install-banner {
+  position: fixed;
+  bottom: 16px;
+  left: 16px;
+  right: 16px;
+  max-width: 448px;
+  margin: 0 auto;
+  background: #264653;
+  color: #fff;
+  padding: 12px 16px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 8px 24px rgba(38, 70, 83, 0.3);
+  z-index: 100;
+  animation: slide-up 0.3s ease-out;
+}
+.install-banner-text { flex: 1; font-size: 13px; }
+.install-banner-btn { background: #E76F51; color: #fff; padding: 6px 12px; border-radius: 8px; font-size: 13px; font-weight: 500; }
+.install-banner-close { color: rgba(255,255,255,0.6); padding: 4px; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script crossorigin src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/prop-types@15.8.1/prop-types.min.js"></script>
+<script crossorigin src="https://unpkg.com/recharts@2.12.7/umd/Recharts.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone@7.24.7/babel.min.js"></script>
+
+<script type="text/babel" data-presets="react">
+const { useState, useEffect, useRef } = React;
+const { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, LineChart, Line, CartesianGrid } = Recharts;
+
+// SVG icons (lucide-react replacements)
+const Icon = ({ d, size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <g dangerouslySetInnerHTML={{ __html: d }} />
+  </svg>
+);
+const MicIcon = (p) => <Icon {...p} d='<path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/>' />;
+const MicOffIcon = (p) => <Icon {...p} d='<line x1="2" y1="2" x2="22" y2="22"/><path d="M18.89 13.23A7.12 7.12 0 0 0 19 12v-2"/><path d="M5 10v2a7 7 0 0 0 12 5"/><path d="M15 9.34V5a3 3 0 0 0-5.68-1.33"/><path d="M9 9v3a3 3 0 0 0 5.12 2.12"/><line x1="12" y1="19" x2="12" y2="22"/>' />;
+const PlusIcon = (p) => <Icon {...p} d='<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>' />;
+const PieIcon = (p) => <Icon {...p} d='<path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/>' />;
+const ListIcon = (p) => <Icon {...p} d='<line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>' />;
+const TrendUpIcon = (p) => <Icon {...p} d='<polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>' />;
+const CalIcon = (p) => <Icon {...p} d='<rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>' />;
+const XIcon = (p) => <Icon {...p} d='<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>' />;
+
+const CATEGORIES = [
+  { id: 'food', name: '餐飲', emoji: '🍜', color: '#E76F51', keywords: ['早餐','午餐','晚餐','宵夜','飲料','咖啡','奶茶','便當','麵','飯','吃','喝','茶','飯糰','麥當勞','星巴克','火鍋','燒烤','壽司','拉麵','超商','7-11','全家','小七'] },
+  { id: 'transport', name: '交通', emoji: '🚌', color: '#F4A261', keywords: ['捷運','公車','計程車','高鐵','火車','油錢','加油','停車','uber','機車','悠遊卡','客運','車票'] },
+  { id: 'shopping', name: '購物', emoji: '🛍️', color: '#E9C46A', keywords: ['衣服','鞋子','買','購物','電子','3c','蝦皮','pchome','網購','包包','化妝品'] },
+  { id: 'entertain', name: '娛樂', emoji: '🎮', color: '#2A9D8F', keywords: ['電影','遊戲','ktv','演唱會','netflix','steam','訂閱','spotify','娛樂'] },
+  { id: 'life', name: '生活', emoji: '🏠', color: '#264653', keywords: ['水電','房租','日用品','洗衣','家用','網路','電話','電信'] },
+  { id: 'study', name: '教育', emoji: '📚', color: '#457B9D', keywords: ['學費','補習','課本','文具','書','參考書','講義','考試'] },
+  { id: 'health', name: '醫療', emoji: '💊', color: '#A8DADC', keywords: ['醫院','藥','看病','診所','牙醫','健保'] },
+  { id: 'other', name: '其他', emoji: '✏️', color: '#8D99AE', keywords: [] },
+];
+
+const classify = (text) => {
+  const lower = text.toLowerCase();
+  for (const cat of CATEGORIES) {
+    if (cat.keywords.some(k => lower.includes(k.toLowerCase()))) return cat.id;
+  }
+  return 'other';
+};
+
+const parseVoice = (t) => {
+  const cleaned = t.replace(/[元塊]/g, '').trim();
+  const m = cleaned.match(/(\d+(?:\.\d+)?)/);
+  if (!m) return null;
+  const amount = parseFloat(m[1]);
+  const description = cleaned.replace(m[0], '').trim() || '其他支出';
+  return { amount, description, category: classify(description) };
+};
+
+const fmt = (n) => new Intl.NumberFormat('zh-TW').format(Math.round(n));
+const dateKey = (d) => {
+  const x = new Date(d);
+  return `${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,'0')}-${String(x.getDate()).padStart(2,'0')}`;
+};
+
+const STORAGE_KEY = 'expense_tracker_data_v1';
+
+function App() {
+  const [expenses, setExpenses] = useState([]);
+  const [loaded, setLoaded] = useState(false);
+  const [amount, setAmount] = useState('');
+  const [description, setDescription] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('food');
+  const [view, setView] = useState('today');
+  const [isListening, setIsListening] = useState(false);
+  const [voiceError, setVoiceError] = useState('');
+  const [lastHeard, setLastHeard] = useState('');
+  const [activeTab, setActiveTab] = useState('entry');
+  const recognitionRef = useRef(null);
+
+  useEffect(() => {
+    try {
+      const s = localStorage.getItem(STORAGE_KEY);
+      if (s) setExpenses(JSON.parse(s));
+    } catch(e) {}
+    setLoaded(true);
+  }, []);
+
+  useEffect(() => {
+    if (!loaded) return;
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(expenses)); } catch(e) {}
+  }, [expenses, loaded]);
+
+  useEffect(() => {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) return;
+    const rec = new SR();
+    rec.lang = 'zh-TW';
+    rec.continuous = false;
+    rec.interimResults = false;
+    rec.onresult = (e) => {
+      const t = e.results[0][0].transcript;
+      setLastHeard(t);
+      const p = parseVoice(t);
+      if (p) { addExpense(p.amount, p.description, p.category); setVoiceError(''); }
+      else setVoiceError(`聽到「${t}」，但抓不到金額。試試「早餐 85」`);
+    };
+    rec.onerror = (e) => {
+      setIsListening(false);
+      if (e.error === 'no-speech') setVoiceError('沒聽到聲音，再試一次');
+      else if (e.error === 'not-allowed') setVoiceError('需要開啟麥克風權限');
+      else setVoiceError(`辨識錯誤：${e.error}`);
+    };
+    rec.onend = () => setIsListening(false);
+    recognitionRef.current = rec;
+  }, []);
+
+  const addExpense = (amt, desc, cat) => {
+    setExpenses(prev => [{
+      id: Date.now() + Math.random(),
+      amount: amt, description: desc, category: cat,
+      date: new Date().toISOString()
+    }, ...prev]);
+  };
+
+  const handleManualAdd = () => {
+    const a = parseFloat(amount);
+    if (!a || a <= 0) return;
+    addExpense(a, description || CATEGORIES.find(c=>c.id===selectedCategory).name, selectedCategory);
+    setAmount(''); setDescription('');
+  };
+
+  const handleVoice = () => {
+    if (!recognitionRef.current) { setVoiceError('你的瀏覽器不支援語音輸入，建議用 Chrome 或 Safari'); return; }
+    if (isListening) { recognitionRef.current.stop(); setIsListening(false); }
+    else {
+      setVoiceError(''); setLastHeard('');
+      try { recognitionRef.current.start(); setIsListening(true); }
+      catch(e) { setVoiceError('無法啟動麥克風'); }
+    }
+  };
+
+  const deleteExpense = (id) => setExpenses(prev => prev.filter(e => e.id !== id));
+
+  const now = new Date();
+  const filtered = expenses.filter(e => {
+    const d = new Date(e.date);
+    if (view === 'today') return dateKey(d) === dateKey(now);
+    if (view === 'week') {
+      const w = new Date(now); w.setDate(now.getDate() - 6); w.setHours(0,0,0,0);
+      return d >= w;
+    }
+    if (view === 'month') return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+    return true;
+  });
+
+  const total = filtered.reduce((s, e) => s + e.amount, 0);
+  const categoryData = CATEGORIES.map(c => ({
+    name: c.name,
+    value: filtered.filter(e => e.category === c.id).reduce((s, e) => s + e.amount, 0),
+    color: c.color
+  })).filter(c => c.value > 0);
+
+  const days = view === 'today' ? 1 : view === 'week' ? 7 : 30;
+  const dailyData = [];
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date(now); d.setDate(now.getDate() - i);
+    const k = dateKey(d);
+    const t = expenses.filter(e => dateKey(new Date(e.date)) === k).reduce((s, e) => s + e.amount, 0);
+    dailyData.push({ date: `${d.getMonth()+1}/${d.getDate()}`, 金額: t });
+  }
+  const avgDaily = view === 'today' ? total : total / days;
+
+  return (
+    <div className="app-wrap">
+      <header className="header">
+        <div className="header-row">
+          <h1 className="title">小記帳</h1>
+          <span className="date-label">{now.getFullYear()}.{String(now.getMonth()+1).padStart(2,'0')}.{String(now.getDate()).padStart(2,'0')}</span>
+        </div>
+        <div className="divider" />
+      </header>
+
+      <div className="card slide-up">
+        <div className="view-switch">
+          {[{id:'today',label:'今日'},{id:'week',label:'本週'},{id:'month',label:'本月'}].map(v => (
+            <button key={v.id} className={`view-btn ${view===v.id?'active':''}`} onClick={() => setView(v.id)}>
+              {v.label}
+            </button>
+          ))}
+        </div>
+        <div className="summary-label">{view==='today'?'今日支出':view==='week'?'本週支出':'本月支出'}</div>
+        <div className="summary-amount">
+          <span className="currency">NT$</span>
+          <span className="total">{fmt(total)}</span>
+        </div>
+        {view !== 'today' && (
+          <div className="summary-detail">
+            日均 <strong>NT$ {fmt(avgDaily)}</strong> · 共 <strong>{filtered.length}</strong> 筆
+          </div>
+        )}
+      </div>
+
+      <div className="tabs">
+        {[
+          {id:'entry',label:'記一筆',Icon:PlusIcon},
+          {id:'charts',label:'圖表',Icon:PieIcon},
+          {id:'list',label:'明細',Icon:ListIcon}
+        ].map(t => (
+          <button key={t.id} className={`tab-btn ${activeTab===t.id?'active':''}`} onClick={() => setActiveTab(t.id)}>
+            <t.Icon size={15} />{t.label}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === 'entry' && (
+        <div className="slide-up">
+          <div className="card voice-card">
+            <div className="mic-wrap">
+              {isListening && <span className="pulse-ring" />}
+              <button className={`mic-btn ${isListening?'listening':''}`} onClick={handleVoice}>
+                {isListening ? <MicOffIcon size={28} /> : <MicIcon size={28} />}
+              </button>
+            </div>
+            <div className="voice-status">{isListening ? '聽你說話中…' : '按麥克風開始說話'}</div>
+            <div className="voice-hint">例：「早餐 85」、「計程車 250」</div>
+            {lastHeard && !voiceError && <div className="voice-heard">✓ 聽到：{lastHeard}</div>}
+            {voiceError && <div className="voice-error">{voiceError}</div>}
+          </div>
+
+          <div className="card">
+            <div className="input-row">
+              <span className="currency" style={{fontSize: '14px'}}>NT$</span>
+              <input type="number" inputMode="decimal" className="amount-input" value={amount} onChange={e => setAmount(e.target.value)} placeholder="0" />
+            </div>
+            <input type="text" className="note-input" value={description} onChange={e => setDescription(e.target.value)} placeholder="備註（選填）" />
+            <div className="cat-grid">
+              {CATEGORIES.map(c => {
+                const active = selectedCategory === c.id;
+                return (
+                  <button key={c.id} className="cat-btn" onClick={() => setSelectedCategory(c.id)}
+                    style={{background: active ? c.color : '#F5EFE6', color: active ? '#fff' : '#264653', fontWeight: active ? 600 : 400}}>
+                    <span className="cat-emoji">{c.emoji}</span>
+                    <span>{c.name}</span>
+                  </button>
+                );
+              })}
+            </div>
+            <button className="submit-btn" onClick={handleManualAdd} disabled={!amount || parseFloat(amount) <= 0}>記下這筆</button>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'charts' && (
+        <div className="slide-up">
+          {filtered.length === 0 ? (
+            <div className="card empty">
+              <div className="empty-emoji">📊</div>
+              <div className="empty-text">這段期間還沒有紀錄</div>
+            </div>
+          ) : (
+            <>
+              <div className="card chart-card">
+                <div className="chart-title-row">
+                  <span style={{color:'#E76F51', display:'flex'}}><PieIcon size={14} /></span>
+                  <span className="chart-title">類別分布</span>
+                </div>
+                <ResponsiveContainer width="100%" height={200}>
+                  <PieChart>
+                    <Pie data={categoryData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={70} innerRadius={35} paddingAngle={2}>
+                      {categoryData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
+                    </Pie>
+                    <Tooltip formatter={(v) => `NT$ ${fmt(v)}`} />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="legend">
+                  {categoryData.sort((a,b)=>b.value-a.value).map(c => (
+                    <div key={c.name} className="legend-item">
+                      <div className="legend-left">
+                        <span className="legend-dot" style={{background: c.color}} />
+                        <span>{c.name}</span>
+                      </div>
+                      <div className="legend-right">
+                        <span className="legend-amount">NT$ {fmt(c.value)}</span>
+                        <span className="legend-percent">{((c.value/total)*100).toFixed(0)}%</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {view !== 'today' && (
+                <div className="card chart-card">
+                  <div className="chart-title-row">
+                    <span style={{color:'#2A9D8F', display:'flex'}}><TrendUpIcon size={14} /></span>
+                    <span className="chart-title">每日花費</span>
+                  </div>
+                  <ResponsiveContainer width="100%" height={180}>
+                    <BarChart data={dailyData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#F5EFE6" vertical={false} />
+                      <XAxis dataKey="date" tick={{fontSize:10, fill:'#8D99AE'}} axisLine={false} tickLine={false} />
+                      <YAxis tick={{fontSize:10, fill:'#8D99AE'}} axisLine={false} tickLine={false} />
+                      <Tooltip formatter={(v) => `NT$ ${fmt(v)}`} />
+                      <Bar dataKey="金額" fill="#E76F51" radius={[6,6,0,0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+
+              {view === 'month' && (
+                <div className="card chart-card">
+                  <div className="chart-title-row">
+                    <span style={{color:'#457B9D', display:'flex'}}><CalIcon size={14} /></span>
+                    <span className="chart-title">累計趨勢</span>
+                  </div>
+                  <ResponsiveContainer width="100%" height={180}>
+                    <LineChart data={dailyData.reduce((acc, d, i) => {
+                      const cum = i===0 ? d.金額 : acc[i-1].累計 + d.金額;
+                      acc.push({...d, 累計: cum}); return acc;
+                    }, [])}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#F5EFE6" vertical={false} />
+                      <XAxis dataKey="date" tick={{fontSize:10, fill:'#8D99AE'}} axisLine={false} tickLine={false} />
+                      <YAxis tick={{fontSize:10, fill:'#8D99AE'}} axisLine={false} tickLine={false} />
+                      <Tooltip formatter={(v) => `NT$ ${fmt(v)}`} />
+                      <Line type="monotone" dataKey="累計" stroke="#457B9D" strokeWidth={2.5} dot={{fill:'#457B9D', r:3}} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
+
+      {activeTab === 'list' && (
+        <div className="card list-card slide-up">
+          {filtered.length === 0 ? (
+            <div className="empty">
+              <div className="empty-emoji">📝</div>
+              <div className="empty-text">還沒有紀錄</div>
+            </div>
+          ) : (
+            filtered.map(e => {
+              const cat = CATEGORIES.find(c => c.id === e.category) || CATEGORIES[CATEGORIES.length-1];
+              const d = new Date(e.date);
+              return (
+                <div key={e.id} className="list-item">
+                  <div className="list-icon" style={{background: cat.color + '20'}}>{cat.emoji}</div>
+                  <div className="list-body">
+                    <div className="list-title">{e.description}</div>
+                    <div className="list-meta">{cat.name} · {d.getMonth()+1}/{d.getDate()} {String(d.getHours()).padStart(2,'0')}:{String(d.getMinutes()).padStart(2,'0')}</div>
+                  </div>
+                  <div className="list-amount">-{fmt(e.amount)}</div>
+                  <button className="delete-btn" onClick={() => deleteExpense(e.id)}><XIcon size={14} /></button>
+                </div>
+              );
+            })
+          )}
+        </div>
+      )}
+
+      <div className="footer-hint">資料儲存在這個瀏覽器中</div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+
+<script>
+// PWA service worker registration
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  });
+}
+</script>
+</body>
+</html>
