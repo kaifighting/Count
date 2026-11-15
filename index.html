@@ -467,19 +467,42 @@ const parseInvoiceDate = (s) => {
   return isNaN(dt) || dt.getMonth() !== m - 1 ? null : dt;
 };
 
+// 欄位順序有新舊兩種版本：優先照檔案裡「表頭=M|…」那行宣告的順序，沒有宣告就看發票號碼在哪一欄來判斷
+const INVOICE_NO_RE = /^[A-Z]{2}-?\d{8}$/;
+const M_OLD = { status: 1, no: 2, date: 3, shop: 5, total: 8 };   // M|狀態|號碼|日期|統編|店名|載具名稱|載具號碼|金額
+const M_NEW = { date: 3, shop: 5, no: 6, total: 7, status: 8 };   // M|載具名稱|載具號碼|日期|統編|店名|號碼|金額|狀態
+const headerMap = (cols, names) => {
+  const map = {};
+  Object.keys(names).forEach(k => { const i = cols.findIndex(c => names[k].test(c)); if (i >= 0) map[k] = i; });
+  return map;
+};
+
 const parseInvoiceCsv = (text) => {
   const invoices = [];
   const items = {};
+  let mMap = null, dMap = { no: 1, name: 3 };
   text.split(/\r?\n/).forEach(line => {
     const f = line.replace(/^﻿/, '').split('|').map(x => x.trim());
-    if (f[0] === 'M' && f.length >= 8) {
-      const date = parseInvoiceDate(f[3]);
-      const total = parseFloat(String(f[7]).replace(/,/g, ''));
-      if (!date || !(total > 0) || !f[6]) return;
-      if (/作廢/.test(f[8] || '')) return;
-      invoices.push({ no: f[6], date, shop: f[5], total });
-    } else if (f[0] === 'D' && f.length >= 4 && f[3]) {
-      (items[f[1]] = items[f[1]] || []).push(f[3]);
+    if (/=M$/.test(f[0])) {
+      const m = headerMap(f, { status: /狀態/, no: /發票號碼/, date: /日期/, shop: /店名|名稱/, total: /金額/ });
+      // 「載具名稱」也含「名稱」，店名要另外找
+      const shopIdx = f.findIndex(c => /店名|商店名稱|賣方名稱/.test(c));
+      if (shopIdx >= 0) m.shop = shopIdx;
+      if (m.no && m.date && m.total) mMap = m;
+    } else if (/=D$/.test(f[0])) {
+      const d = headerMap(f, { no: /發票號碼/, name: /品項|品名/ });
+      if (d.no && d.name) dMap = d;
+    } else if (f[0] === 'M' && f.length >= 8) {
+      const m = mMap || (INVOICE_NO_RE.test(f[2]) ? M_OLD : M_NEW);
+      const date = parseInvoiceDate(f[m.date] || '');
+      const total = parseFloat(String(f[m.total] || '').replace(/,/g, ''));
+      const no = (f[m.no] || '').replace('-', '');
+      if (!date || !(total > 0) || !no) return;
+      if (/作廢/.test(f[m.status] || '')) return;
+      invoices.push({ no, date, shop: f[m.shop] || '', total });
+    } else if (f[0] === 'D' && f.length >= 4 && f[dMap.name]) {
+      const no = (f[dMap.no] || '').replace('-', '');
+      (items[no] = items[no] || []).push(f[dMap.name]);
     }
   });
   return invoices.map(v => ({ ...v, items: items[v.no] || [] }));
