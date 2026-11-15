@@ -280,6 +280,14 @@ input[type=number] { -moz-appearance: textfield; }
 .ghost-btn:disabled { opacity: 0.4; }
 .sync-msg { margin-top: 12px; font-size: 12px; padding: 8px 12px; border-radius: 8px; background: #E8F5F3; color: #1F7A6F; }
 .sync-msg.warn { background: #FDF0EC; color: #C8553A; }
+.sync-input {
+  width: 100%; font-size: 13px; color: #264653;
+  border: 1px solid rgba(38, 70, 83, 0.12); border-radius: 10px;
+  padding: 10px 12px; outline: none; margin-bottom: 12px; background: #fff;
+}
+.sync-status { font-size: 13px; color: #1F7A6F; margin-bottom: 12px; }
+.btn-row { display: flex; gap: 8px; }
+.sync-steps a { color: #E76F51; }
 
 .footer-hint { text-align: center; font-size: 12px; color: #B8B0A3; margin-top: 24px; }
 
@@ -377,6 +385,21 @@ const dateKey = (d) => {
 
 const STORAGE_KEY = 'expense_tracker_data_v1';
 const SEEN_KEY = 'expense_tracker_notif_seen_v1';
+const SYNC_KEY = 'expense_tracker_gmail_sync_v1';
+const IGNORED_KEY = 'expense_tracker_ignored_invoices_v1';
+const SCRIPT_FILE = './gmail-sync-script.txt';
+
+const readJson = (key, fallback) => {
+  try { const v = JSON.parse(localStorage.getItem(key)); return v == null ? fallback : v; } catch (e) { return fallback; }
+};
+const writeJson = (key, value) => { try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) {} };
+const randomKey = () => Array.from(crypto.getRandomValues(new Uint8Array(16)), b => b.toString(16).padStart(2, '0')).join('');
+const loadSyncCfg = () => {
+  const cfg = readJson(SYNC_KEY, {});
+  if (!cfg.key) { cfg.key = randomKey(); writeJson(SYNC_KEY, cfg); }
+  return cfg;
+};
+const isScriptUrl = (u) => /^https:\/\/script\.google\.com\/macros\/s\/[\w-]+\/exec$/.test(u);
 
 // ===== 刷卡通知解析 =====
 // 不是消費的通知（驗證碼、帳單、退款…）直接略過
@@ -511,9 +534,9 @@ const parseInvoiceCsv = (text) => {
 const shortShop = (name) => (name || '').split(/股份有限公司|有限公司/)[0].trim() || name || '發票消費';
 
 // 把發票併進現有紀錄：同一張發票不重複；同一天同金額的刷卡通知視為同一筆
-const mergeInvoices = (expenses, invoices) => {
+const mergeInvoices = (expenses, invoices, ignored = []) => {
   const list = expenses.map(e => ({ ...e }));
-  const known = new Set(list.filter(e => e.invoiceNo).map(e => e.invoiceNo));
+  const known = new Set(list.filter(e => e.invoiceNo).map(e => e.invoiceNo).concat(ignored));
   let added = 0, merged = 0, skipped = 0;
   invoices.forEach(v => {
     if (known.has(v.no)) { skipped++; return; }
@@ -538,10 +561,29 @@ const mergeInvoices = (expenses, invoices) => {
   return { list, added, merged, skipped };
 };
 
-const decodeFile = async (file) => {
-  const buf = await file.arrayBuffer();
+const decodeBytes = (buf) => {
   try { return new TextDecoder('utf-8', { fatal: true }).decode(buf); }
   catch (e) { return new TextDecoder('big5').decode(buf); }
+};
+const decodeFile = async (file) => decodeBytes(await file.arrayBuffer());
+const b64ToBytes = (b64) => Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+
+// 向使用者自己的 Google Apps Script 要發票信的附件
+const fetchGmailInvoices = async (cfg) => {
+  const since = cfg.lastSync ? Math.ceil((Date.now() - cfg.lastSync) / 86400000) + 3 : 180;
+  const days = Math.min(Math.max(since, 7), 400);
+  let data;
+  try {
+    const res = await fetch(`${cfg.url}?key=${encodeURIComponent(cfg.key)}&days=${days}`);
+    data = await res.json();
+  } catch (e) {
+    throw new Error('連不上你的 Google 程式。請確認部署時「誰可以存取」選了「所有人」，而且貼的是結尾為 /exec 的網址');
+  }
+  if (data.error === 'unauthorized') throw new Error('金鑰不符。請重新按「複製程式碼」貼到 Google 那邊，再重新部署一次');
+  if (data.error) throw new Error(String(data.error));
+  const invoices = [];
+  (data.files || []).forEach(f => { invoices.push(...parseInvoiceCsv(decodeBytes(b64ToBytes(f.b64)))); });
+  return { invoices, data };
 };
 
 function App() {
@@ -562,6 +604,15 @@ function App() {
   const [importMsg, setImportMsg] = useState(null);
   const [copied, setCopied] = useState(false);
   const fileRef = useRef(null);
+  const [syncCfg, setSyncCfg] = useState(loadSyncCfg);
+  const [syncUrl, setSyncUrl] = useState('');
+  const [syncMsg, setSyncMsg] = useState(null);
+  const [syncing, setSyncing] = useState(false);
+  const [scriptText, setScriptText] = useState('');
+  const [scriptCopied, setScriptCopied] = useState(false);
+  const [showScript, setShowScript] = useState(false);
+  const expensesRef = useRef(expenses);
+  expensesRef.current = expenses;
 
   useEffect(() => {
     let list = [];
@@ -676,7 +727,71 @@ function App() {
     }
   };
 
-  const deleteExpense = (id) => setExpenses(prev => prev.filter(e => e.id !== id));
+  const deleteExpense = (id) => {
+    // 刪掉的發票記下來，之後自動同步才不會又跑回來
+    const gone = expensesRef.current.find(e => e.id === id);
+    if (gone && gone.invoiceNo) writeJson(IGNORED_KEY, readJson(IGNORED_KEY, []).concat(gone.invoiceNo).slice(-2000));
+    setExpenses(prev => prev.filter(e => e.id !== id));
+  };
+
+  const runSync = async (cfg, manual) => {
+    if (!cfg.url) return;
+    setSyncing(true);
+    try {
+      const { invoices, data } = await fetchGmailInvoices(cfg);
+      const r = mergeInvoices(expensesRef.current, invoices, readJson(IGNORED_KEY, []));
+      if (r.added || r.merged) setExpenses(r.list);
+      const next = { ...cfg, lastSync: Date.now() };
+      writeJson(SYNC_KEY, next); setSyncCfg(next);
+      const got = r.added + r.merged;
+      if (manual) {
+        let text;
+        if (got) text = `✓ 同步完成：新增 ${r.added} 筆${r.merged ? `、與刷卡通知合併 ${r.merged} 筆` : ''}`;
+        else if (invoices.length) text = '✓ 同步完成，沒有新的發票';
+        else if (data.mails) text = `找到 ${data.mails} 封信，但附件讀不出發票（${(data.skipped || []).join('、') || '格式不同'}）`;
+        else if (data.mailsWithoutAttachment) text = `找到 ${data.mailsWithoutAttachment} 封財政部的信，但都沒有附件`;
+        else text = '✓ 已連結。信箱裡目前還沒有財政部寄來的發票彙整信，寄來後會自動匯入';
+        setSyncMsg({ warn: !got && !invoices.length && !!(data.mails || data.mailsWithoutAttachment), text });
+      } else if (got) {
+        setNotice({ text: `已從信箱同步 ${got} 張發票` });
+      }
+    } catch (e) {
+      if (manual) setSyncMsg({ warn: true, text: e.message });
+    }
+    setSyncing(false);
+  };
+
+  // 開啟 App 時自動同步（距離上次超過 1 小時才做）
+  useEffect(() => {
+    if (!loaded || !syncCfg.url) return;
+    if (Date.now() - (syncCfg.lastSync || 0) > 3600000) runSync(syncCfg, false);
+  }, [loaded]);
+
+  // 進到匯入分頁時先把要貼到 Google 的程式碼準備好
+  useEffect(() => {
+    if (activeTab !== 'sync' || scriptText) return;
+    fetch(SCRIPT_FILE).then(r => r.ok ? r.text() : '').then(t => setScriptText(t.replace('__KEY__', syncCfg.key))).catch(() => {});
+  }, [activeTab]);
+
+  const copyScript = () => {
+    if (!scriptText) return;
+    const done = () => { setScriptCopied(true); setTimeout(() => setScriptCopied(false), 1500); };
+    if (!navigator.clipboard) { setShowScript(true); return; }
+    navigator.clipboard.writeText(scriptText).then(done).catch(() => setShowScript(true));
+  };
+
+  const connectGmail = () => {
+    const url = syncUrl.trim();
+    if (!isScriptUrl(url)) { setSyncMsg({ warn: true, text: '網址不對。要貼的是部署完成後顯示的「網頁應用程式」網址，開頭是 https://script.google.com/macros/s/，結尾是 /exec' }); return; }
+    const next = { key: syncCfg.key, url };
+    writeJson(SYNC_KEY, next); setSyncCfg(next); setSyncUrl(''); setSyncMsg(null);
+    runSync(next, true);
+  };
+
+  const disconnectGmail = () => {
+    const next = { key: syncCfg.key };
+    writeJson(SYNC_KEY, next); setSyncCfg(next); setSyncMsg(null);
+  };
 
   const now = new Date();
   const filtered = expenses.filter(e => {
@@ -922,6 +1037,37 @@ function App() {
               placeholder="例：您的信用卡於 11/15 在全聯實業消費 NT$350" />
             <button className="ghost-btn" onClick={handlePasteNotif} disabled={!pasteText.trim()}>解析並記帳</button>
             {pasteMsg && <div className={`sync-msg ${pasteMsg.warn ? 'warn' : ''}`}>{pasteMsg.text}</div>}
+          </div>
+
+          <div className="card">
+            <div className="sync-title">自動讀取發票信（Gmail）</div>
+            {syncCfg.url ? (
+              <>
+                <div className="sync-status">
+                  ● 已連結{syncCfg.lastSync ? ` · 上次同步 ${new Date(syncCfg.lastSync).toLocaleString('zh-TW', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })}` : ''}
+                </div>
+                <div className="sync-desc">財政部寄來的「消費發票彙整通知」信，會在你打開小記帳時自動匯入。</div>
+                <div className="btn-row">
+                  <button className="ghost-btn" onClick={() => runSync(syncCfg, true)} disabled={syncing}>{syncing ? '同步中…' : '立即同步'}</button>
+                  <button className="ghost-btn" style={{color:'#C8553A'}} onClick={disconnectGmail} disabled={syncing}>取消連結</button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="sync-desc">讓財政部寄到 Gmail 的「消費發票彙整通知」信自動匯入。需要在你的 Google 帳號放一小段程式，只要設定一次。</div>
+                <ol className="sync-steps">
+                  <li>按下面的「複製程式碼」</li>
+                  <li>開啟 <a href="https://script.google.com/home/projects/create" target="_blank" rel="noopener">script.google.com</a> 建立新專案，把裡面原本的內容全部刪掉，貼上程式碼並儲存</li>
+                  <li>按右上角「部署」→「新增部署作業」，類型選「網頁應用程式」，執行身分選「我」，誰可以存取選「所有人」</li>
+                  <li>按「部署」並依畫面授權，再把「網頁應用程式」的網址貼到下面</li>
+                </ol>
+                <button className="ghost-btn" style={{marginBottom: 12}} onClick={copyScript} disabled={!scriptText}>{scriptCopied ? '已複製' : '複製程式碼'}</button>
+                {showScript && <textarea className="sync-textarea" readOnly value={scriptText} onFocus={e => e.target.select()} />}
+                <input className="sync-input" type="url" value={syncUrl} onChange={e => setSyncUrl(e.target.value)} placeholder="https://script.google.com/macros/s/…/exec" />
+                <button className="ghost-btn" onClick={connectGmail} disabled={!syncUrl.trim() || syncing}>{syncing ? '同步中…' : '連結並同步'}</button>
+              </>
+            )}
+            {syncMsg && <div className={`sync-msg ${syncMsg.warn ? 'warn' : ''}`}>{syncMsg.text}</div>}
           </div>
 
           <div className="card">

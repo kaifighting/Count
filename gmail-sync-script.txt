@@ -1,0 +1,50 @@
+// 小記帳 – 自動讀取財政部「消費發票彙整通知」信
+// 這段程式在你自己的 Google 帳號裡執行，只會找財政部電子發票平台寄來的信，
+// 把附件交給帶著正確金鑰來詢問的小記帳 App，不會修改或刪除任何信件。
+
+const KEY = '__KEY__';
+
+function doGet(e) {
+  const p = (e && e.parameter) || {};
+  if (p.key !== KEY) return json({ error: 'unauthorized' });
+
+  const days = Math.min(Math.max(parseInt(p.days, 10) || 180, 1), 400);
+  const who = '(from:einvoice.nat.gov.tw OR subject:消費發票彙整通知)';
+  const threads = GmailApp.search(who + ' has:attachment newer_than:' + days + 'd', 0, 40);
+
+  const files = [];
+  const skipped = [];
+  let mails = 0;
+  threads.forEach(function (thread) {
+    thread.getMessages().forEach(function (msg) {
+      mails++;
+      msg.getAttachments().forEach(function (att) { collect(att, msg.getDate(), files, skipped); });
+    });
+  });
+
+  // 找不到附件時，回報有沒有「沒附件的信」，方便判斷問題出在哪
+  let mailsWithoutAttachment = 0;
+  if (!files.length) {
+    mailsWithoutAttachment = GmailApp.search(who + ' -has:attachment newer_than:' + days + 'd', 0, 40).length;
+  }
+
+  return json({ files: files, mails: mails, skipped: skipped, mailsWithoutAttachment: mailsWithoutAttachment });
+}
+
+function collect(blob, date, files, skipped) {
+  const name = blob.getName() || '';
+  if (/\.zip$/i.test(name)) {
+    try {
+      Utilities.unzip(blob).forEach(function (inner) { collect(inner, date, files, skipped); });
+    } catch (err) {
+      skipped.push(name + '（壓縮檔打不開，可能有密碼）');
+    }
+    return;
+  }
+  if (!/\.(csv|txt)$/i.test(name)) { skipped.push(name); return; }
+  files.push({ name: name, date: date.toISOString(), b64: Utilities.base64Encode(blob.getBytes()) });
+}
+
+function json(obj) {
+  return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
+}

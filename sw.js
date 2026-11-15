@@ -1,9 +1,10 @@
 // 小記帳 Service Worker - 讓 App 可以離線使用
-const CACHE_NAME = 'expense-tracker-v2';
+const CACHE_NAME = 'expense-tracker-v3';
 const ASSETS = [
   './',
   './index.html',
   './manifest.json',
+  './gmail-sync-script.txt',
   './icon-192.png',
   './icon-512.png'
 ];
@@ -41,6 +42,9 @@ self.addEventListener('fetch', (event) => {
     );
     return;
   }
+
+  // 其他網站（例如自動同步用的 Google 程式）不經過快取，直接連線
+  if (!req.url.startsWith('https://unpkg.com') && !req.url.startsWith('https://fonts.')) return;
 
   event.respondWith(
     caches.match(req).then((cached) => {
