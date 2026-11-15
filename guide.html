@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#E76F51" />
+<link rel="icon" type="image/png" href="./icon-192.png" />
+<title>小記帳使用說明</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@500;700&family=Noto+Sans+TC:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: one reading column, like a booklet that ships with the app. Uses the app's own palette and type. */
+:root {
+  --bg: #FAF7F2; --surface: #FFFFFF; --soft: #F3ECE1;
+  --ink: #264653; --muted: #66788A; --line: rgba(38, 70, 83, 0.14);
+  --accent: #E76F51; --accent-ink: #B9472C; --teal: #1F7A6F;
+  --ok-bg: #E6F3F0; --warn-bg: #FCEDE8;
+  --display: "Noto Serif TC", "Songti TC", "PMingLiU", serif;
+  --body: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #15262D; --surface: #1D343D; --soft: #25414B;
+    --ink: #F1EBE1; --muted: #A3B4BD; --line: rgba(241, 235, 225, 0.16);
+    --accent: #F08A6E; --accent-ink: #F6A890; --teal: #6CCDBF;
+    --ok-bg: #1C433D; --warn-bg: #472A22;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #15262D; --surface: #1D343D; --soft: #25414B;
+  --ink: #F1EBE1; --muted: #A3B4BD; --line: rgba(241, 235, 225, 0.16);
+  --accent: #F08A6E; --accent-ink: #F6A890; --teal: #6CCDBF;
+  --ok-bg: #1C433D; --warn-bg: #472A22;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font-family: var(--body); font-size: 16px; line-height: 1.8;
+  -webkit-font-smoothing: antialiased;
+}
+.page {
+  max-width: 44rem; margin: 0 auto; padding-block: 2rem 4rem;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 2.75rem;
+}
+a { color: var(--accent-ink); text-underline-offset: 3px; }
+a:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+p, ul, ol, h1, h2, h3, table, dl, dd { margin: 0; }
+
+/* Header */
+.top { display: flex; flex-direction: column; gap: 0.9rem; }
+.eyebrow { font-family: var(--mono); font-size: 0.75rem; letter-spacing: 0.12em; color: var(--muted); }
+h1 { font-family: var(--display); font-size: clamp(2rem, 7vw, 2.75rem); font-weight: 700; line-height: 1.2; letter-spacing: -0.01em; text-wrap: balance; }
+.rule { height: 1px; background: linear-gradient(90deg, var(--accent), transparent); }
+.lede { color: var(--muted); max-width: 34rem; }
+.actions { display: flex; flex-wrap: wrap; gap: 0.6rem; }
+.btn {
+  display: inline-block; padding: 0.6rem 1.1rem; border-radius: 12px;
+  font-weight: 700; font-size: 0.95rem; text-decoration: none;
+  background: var(--ink); color: var(--bg);
+}
+.btn.quiet { background: var(--soft); color: var(--ink); }
+
+/* Contents */
+.toc { display: flex; flex-direction: row; flex-wrap: wrap; gap: 0.5rem; padding: 0; list-style: none; }
+.toc a {
+  display: block; padding: 0.35rem 0.8rem; border-radius: 999px;
+  border: 1px solid var(--line); color: var(--ink); text-decoration: none; font-size: 0.9rem;
+}
+
+/* Sections */
+section { display: flex; flex-direction: column; gap: 1.1rem; scroll-margin-top: 1rem; }
+.part { font-family: var(--mono); font-size: 0.75rem; letter-spacing: 0.12em; color: var(--accent-ink); }
+h2 { font-family: var(--display); font-size: 1.6rem; font-weight: 700; line-height: 1.3; text-wrap: balance; }
+h3 { font-size: 1.05rem; font-weight: 700; margin-top: 0.6rem; }
+.head { display: flex; flex-direction: column; gap: 0.2rem; padding-bottom: 0.7rem; border-bottom: 1px solid var(--line); }
+ul, ol { padding-left: 1.4rem; display: flex; flex-direction: column; gap: 0.35rem; }
+li::marker { color: var(--accent-ink); font-weight: 700; }
+strong { font-weight: 700; }
+code { font-family: var(--mono); font-size: 0.85em; background: var(--soft); padding: 0.1em 0.4em; border-radius: 6px; word-break: break-all; }
+
+/* The three things */
+.trio { display: grid; gap: 0.75rem; grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr)); }
+.thing { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 1rem 1.1rem; display: flex; flex-direction: column; gap: 0.25rem; min-width: 0; }
+.thing dt { font-family: var(--display); font-size: 1.15rem; font-weight: 700; }
+.thing .like { color: var(--teal); font-size: 0.9rem; font-weight: 500; }
+.thing dd { color: var(--muted); font-size: 0.92rem; line-height: 1.65; }
+
+/* The loop */
+.flow { list-style: none; padding: 0; display: grid; gap: 0.5rem; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); counter-reset: step; }
+.flow li { counter-increment: step; background: var(--soft); border-radius: 12px; padding: 0.7rem 0.9rem; font-size: 0.92rem; line-height: 1.55; min-width: 0; }
+.flow li::before { content: counter(step); display: block; font-family: var(--mono); font-size: 0.75rem; color: var(--accent-ink); }
+
+/* Tables */
+.scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: 0.92rem; line-height: 1.6; }
+th, td { text-align: left; vertical-align: top; padding: 0.65rem 0.85rem; }
+th { font-size: 0.8rem; color: var(--muted); font-weight: 500; white-space: nowrap; }
+tr + tr td, thead + tbody td { border-top: 1px solid var(--line); }
+td:first-child { font-weight: 700; white-space: nowrap; }
+
+/* Notes */
+.note { background: var(--ok-bg); border-radius: 12px; padding: 0.85rem 1rem; font-size: 0.93rem; line-height: 1.7; }
+.note.warn { background: var(--warn-bg); }
+.note b { display: block; }
+.say { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 0.2rem 1rem; list-style: none; gap: 0; }
+.say li { padding: 0.6rem 0; }
+.say li + li { border-top: 1px solid var(--line); }
+
+/* Versions */
+.versions { list-style: none; padding: 0; gap: 0; }
+.versions li { display: grid; grid-template-columns: 6.5rem 1fr; gap: 0.25rem 1rem; padding: 0.9rem 0; }
+.versions li + li { border-top: 1px solid var(--line); }
+.versions time { font-family: var(--mono); font-size: 0.8rem; color: var(--muted); padding-top: 0.2rem; }
+.versions .what { min-width: 0; display: flex; flex-direction: column; gap: 0.15rem; }
+.versions .name { font-weight: 700; }
+.versions .more { color: var(--muted); font-size: 0.92rem; line-height: 1.65; }
+@media (max-width: 30rem) { .versions li { grid-template-columns: 1fr; } }
+
+footer { color: var(--muted); font-size: 0.85rem; border-top: 1px solid var(--line); padding-top: 1rem; }
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="top">
+    <div class="eyebrow">使用說明</div>
+    <h1>小記帳使用說明</h1>
+    <div class="rule"></div>
+    <p class="lede">這一頁教你三件事：怎麼用小記帳、怎麼用 GitHub、怎麼請 Claude Code 幫你改 App。照著順序看，不用懂程式。</p>
+    <div class="actions">
+      <a class="btn" href="./">打開小記帳</a>
+      <a class="btn quiet" href="#versions">版本紀錄</a>
+    </div>
+  </header>
+
+  <nav aria-label="目錄">
+    <ul class="toc">
+      <li><a href="#overview">三樣東西的關係</a></li>
+      <li><a href="#app">小記帳怎麼用</a></li>
+      <li><a href="#auto">設定自動記帳</a></li>
+      <li><a href="#github">GitHub 怎麼用</a></li>
+      <li><a href="#claude">請 Claude Code 幫忙</a></li>
+      <li><a href="#versions">版本紀錄</a></li>
+    </ul>
+  </nav>
+
+  <section id="overview">
+    <div class="head"><div class="part">第一部分</div><h2>先看懂三樣東西的關係</h2></div>
+    <dl class="trio">
+      <div class="thing"><dt>小記帳</dt><span class="like">像你的記帳本</span><dd>在手機上記下每天花了多少錢，還會畫圖表給你看。</dd></div>
+      <div class="thing"><dt>GitHub</dt><span class="like">像放設計圖的雲端櫃子</span><dd>保存小記帳的程式，並免費把它變成一個網址。</dd></div>
+      <div class="thing"><dt>Claude Code</dt><span class="like">像幫你改設計圖的工人</span><dd>你用講的，它去改程式、測試，再交給你檢查。</dd></div>
+    </dl>
+    <p>每次想讓小記帳多一個功能，都是走同一條路：</p>
+    <ol class="flow">
+      <li>你告訴 Claude Code 想要什麼</li>
+      <li>它把程式改好，放在「草稿」</li>
+      <li>你同意後，草稿合併成「正式版」</li>
+      <li>手機上的小記帳自動更新</li>
+    </ol>
+    <div class="note"><b>你的花費資料不在 GitHub 上。</b>GitHub 放的只有程式。你記的每一筆帳，只存在你自己手機的瀏覽器裡。</div>
+  </section>
+
+  <section id="app">
+    <div class="head"><div class="part">第二部分</div><h2>小記帳怎麼用</h2></div>
+
+    <h3>打開它，放到手機桌面</h3>
+    <ol>
+      <li>用手機的 Chrome 打開 <code>https://kaifighting.github.io/Count/</code>。</li>
+      <li>點 Chrome 右上角的「⋮」，選「加到主畫面」或「安裝應用程式」。</li>
+      <li>桌面出現小記帳的圖示，之後點圖示就能打開。</li>
+    </ol>
+    <p>如果網址打不開，請看「GitHub 怎麼用」裡的<a href="#pages">檢查網站有沒有開</a>。</p>
+
+    <h3>畫面最上面</h3>
+    <ul>
+      <li><strong>今日／本週／本月</strong>：選你想看哪一段時間。</li>
+      <li><strong>大數字</strong>：那段時間總共花了多少錢。</li>
+    </ul>
+
+    <h3>四個分頁</h3>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>分頁</th><th>用來做什麼</th></tr></thead>
+        <tbody>
+          <tr><td>記一筆</td><td>記下一筆花費。可以按麥克風說「早餐 85」，也可以自己輸入金額、選類別，再按「記下這筆」。</td></tr>
+          <tr><td>圖表</td><td>圓餅圖告訴你錢花在哪一類。選「本週」或「本月」會多一張每天花費的長條圖；選「本月」還會有累計的折線圖。</td></tr>
+          <tr><td>明細</td><td>每一筆花費的清單。右邊的「✕」是刪除。標「通知」的是刷卡通知記的，標「發票」的是發票匯入的。</td></tr>
+          <tr><td>匯入</td><td>讓發票和刷卡紀錄自己進來，不用一筆一筆打。裡面有四張卡片，看下一張表。</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>「匯入」分頁的四張卡片</h3>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>卡片</th><th>做什麼</th><th>什麼時候用</th></tr></thead>
+        <tbody>
+          <tr><td>載具發票匯入</td><td>選一個發票明細檔，自動變成記帳紀錄。</td><td>手上有財政部的明細檔時</td></tr>
+          <tr><td>刷卡通知記帳</td><td>貼上銀行通知的文字，自動抓出金額和店家。</td><td>想試試看，或偶爾補一筆</td></tr>
+          <tr><td>自動讀取發票信</td><td>財政部寄到 Gmail 的發票信，打開 App 時自動匯入。</td><td>設定一次，之後全自動</td></tr>
+          <tr><td>收到推播自動記帳</td><td>銀行 App 一跳出刷卡通知，就自動記一筆。</td><td>設定一次，之後全自動</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>同一張發票不會被記兩次。如果同一天已經有一筆金額相同的刷卡通知，發票進來時會跟它合併成一筆。</p>
+
+    <div class="note warn"><b>資料只在這支手機裡。</b>清除 Chrome 的網站資料、換手機、或把 App 移除，紀錄都會不見。目前還沒有備份功能。</div>
+  </section>
+
+  <section id="auto">
+    <div class="head"><div class="part">第三部分</div><h2>設定自動記帳</h2></div>
+    <p>這兩個設定都只要做一次。請用手機上同一個瀏覽器做完，因為小記帳會在這支手機裡記住一把專屬的鑰匙。</p>
+
+    <h3>自動讀取發票信（Gmail）</h3>
+    <ol>
+      <li>在小記帳的「匯入」分頁，按「複製程式碼」。</li>
+      <li>打開 <code>script.google.com</code>，建立新專案。</li>
+      <li>把裡面原本的字全部刪掉，貼上剛才複製的內容，按儲存。</li>
+      <li>按右上角「部署」，選「新增部署作業」。</li>
+      <li>類型選「網頁應用程式」，執行身分選「我」，誰可以存取選「所有人」。</li>
+      <li>按「部署」。Google 會說「這個應用程式未經驗證」，點「進階」再點「前往」，然後允許。</li>
+      <li>複製畫面上結尾是 <code>/exec</code> 的網址，貼回小記帳，按「連結並同步」。</li>
+    </ol>
+    <div class="note"><b>為什麼會有警告？</b>因為這段程式是你自己建的，不是商店裡上架的產品。它只會找財政部寄來的信、讀裡面的附件，不會改信也不會刪信。那個 <code>/exec</code> 網址不要給別人。</div>
+    <div class="note warn"><b>這個功能還沒在真的 Gmail 上試過。</b>如果小記帳顯示錯誤訊息，把那一行字原封不動貼給 Claude Code，它就能照真實的信件格式調整。</div>
+
+    <h3>收到推播自動記帳（Android）</h3>
+    <ol>
+      <li>到 Play 商店安裝 MacroDroid，新增一個巨集。</li>
+      <li>觸發條件選「收到通知」，App 選你的銀行 App。</li>
+      <li>動作選「開啟網站」，網址貼上小記帳卡片裡那一串，並在最後面插入「通知內容」這個變數。</li>
+      <li>勾選網址編碼，然後儲存。</li>
+    </ol>
+    <div class="note warn"><b>先試一則真的通知。</b>每家銀行的通知寫法不一樣。先把一則真實通知貼到「刷卡通知記帳」試試，抓錯了就把那則通知貼給 Claude Code。MacroDroid 的選單名稱可能和這裡寫的不完全一樣。</div>
+  </section>
+
+  <section id="github">
+    <div class="head"><div class="part">第四部分</div><h2>GitHub 怎麼用</h2></div>
+
+    <h3>先認識七個詞</h3>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>詞</th><th>白話</th></tr></thead>
+        <tbody>
+          <tr><td>Repository</td><td>一個專案的資料夾，常簡稱 repo。小記帳的 repo 叫 <code>Count</code>。</td></tr>
+          <tr><td>Commit</td><td>一次「存檔」。會記下誰、什麼時候、改了什麼。</td></tr>
+          <tr><td>Branch</td><td>草稿本。在草稿上改，不會動到正式版。</td></tr>
+          <tr><td>main</td><td>正式版。你的網站用的就是它。</td></tr>
+          <tr><td>Pull Request</td><td>簡稱 PR。意思是「請把草稿併進正式版」的申請單。</td></tr>
+          <tr><td>Merge</td><td>合併。同意申請，草稿就變成正式版。</td></tr>
+          <tr><td>GitHub Pages</td><td>把 repo 裡的檔案變成網站的免費功能。</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>常做的五件事</h3>
+    <p>先到 <a href="https://github.com/kaifighting/Count">github.com/kaifighting/Count</a> 並登入。</p>
+    <ul>
+      <li><strong>看檔案</strong>：首頁就是檔案清單，點檔名可以看內容。</li>
+      <li><strong>看修改歷史</strong>：點檔案清單上方的「Commits」。</li>
+      <li><strong>看 PR</strong>：點上方的「Pull requests」。已經合併的在「Closed」裡。</li>
+      <li><strong>合併 PR</strong>：進 PR 頁面，按綠色的「Merge pull request」，再按「Confirm merge」。也可以直接請 Claude Code 合併。</li>
+      <li><strong>反悔</strong>：進已合併的 PR 頁面，按「Revert」。它會產生一個「改回去」的新 PR，合併它就復原了。</li>
+    </ul>
+
+    <h3 id="pages">檢查網站有沒有開</h3>
+    <ol>
+      <li>進 <code>Count</code>，點上方的「Settings」，再點左邊的「Pages」。</li>
+      <li>「Source」要選「Deploy from a branch」，Branch 選 <code>main</code>，資料夾選 <code>/ (root)</code>，按 Save。</li>
+      <li>設好後，頁面上方會顯示你的網址。</li>
+      <li>每次合併後，到上方的「Actions」看。出現綠色勾勾，就代表網站更新好了，通常一兩分鐘。</li>
+    </ol>
+    <div class="note"><b>公開的 repo 安全嗎？</b>免費帳號的 repo 要設成公開才能用 Pages。公開的意思是別人看得到程式，但看不到你的花費。</div>
+  </section>
+
+  <section id="claude">
+    <div class="head"><div class="part">第五部分</div><h2>請 Claude Code 幫忙</h2></div>
+
+    <h3>它能做的</h3>
+    <ul>
+      <li>讀小記帳的程式，照你的話修改，並且自己先測試。</li>
+      <li>把改好的東西放到草稿，你開口時幫你開 PR 或合併。</li>
+      <li>查資料，解釋你看不懂的東西。</li>
+    </ul>
+
+    <h3>它不會自己做的</h3>
+    <ul>
+      <li>你沒開口，它不會開 PR，也不會合併。</li>
+      <li>它連不到你的手機、Gmail、銀行和你的網站。實際用起來怎麼樣，要你試了告訴它。</li>
+    </ul>
+
+    <h3>這樣講最有效</h3>
+    <ul class="say">
+      <li><strong>用白話說想要的結果。</strong>例如「我想在明細裡可以改金額」。</li>
+      <li><strong>一次講一件事。</strong>做完一件再講下一件。</li>
+      <li><strong>出問題時給原本的東西。</strong>錯誤訊息原文、截圖、真實的通知文字，卡號可以塗掉。</li>
+      <li><strong>不懂就問。</strong>例如「這個按鈕是做什麼的？」</li>
+    </ul>
+    <div class="note"><b>做好的東西都在 GitHub。</b>每次對話，Claude Code 都是在一台臨時的雲端電腦上工作，對話結束那台電腦就會消失。所以它會把成果放到 GitHub，那裡才是永久保存的地方。</div>
+  </section>
+
+  <section id="versions">
+    <div class="head"><div class="part">第六部分</div><h2>版本紀錄</h2></div>
+    <ol class="versions">
+      <li>
+        <time datetime="2026-11-15">2026.11.15</time>
+        <div class="what">
+          <span class="name">加上使用說明</span>
+          <span class="more">新增這一頁。小記帳最下面多了「使用說明」和「版本紀錄」兩個連結。</span>
+        </div>
+      </li>
+      <li>
+        <time datetime="2026-11-15">2026.11.15</time>
+        <div class="what">
+          <span class="name">「匯入」分頁</span>
+          <span class="more">載具發票匯入、Gmail 自動讀取發票信、刷卡通知記帳、收到推播自動記帳。另外修好圖表套件的網址，並讓更新能送到已安裝的手機。<a href="https://github.com/kaifighting/Count/pull/1">看這次的 PR</a></span>
+        </div>
+      </li>
+      <li>
+        <time>最初版本</time>
+        <div class="what">
+          <span class="name">小記帳上線</span>
+          <span class="more">語音記帳、手動記帳、圖表、明細。</span>
+        </div>
+      </li>
+    </ol>
+    <p><a href="https://github.com/kaifighting/Count/commits/main">在 GitHub 看每一次修改的完整紀錄</a></p>
+  </section>
+
+  <footer>小記帳的程式放在 <a href="https://github.com/kaifighting/Count">github.com/kaifighting/Count</a>。</footer>
+</div>
+</body>
+</html>

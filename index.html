@@ -290,6 +290,8 @@ input[type=number] { -moz-appearance: textfield; }
 .sync-steps a { color: #E76F51; }
 
 .footer-hint { text-align: center; font-size: 12px; color: #B8B0A3; margin-top: 24px; }
+.footer-links { margin-top: 8px; display: flex; justify-content: center; gap: 8px; font-size: 13px; }
+.footer-links a { color: #E76F51; font-weight: 500; text-decoration: none; padding: 4px 2px; }
 
 .slide-up { animation: slide-up 0.25s ease-out; }
 @keyframes slide-up {
@@ -1085,7 +1087,14 @@ function App() {
         </div>
       )}
 
-      <div className="footer-hint">資料儲存在這個瀏覽器中</div>
+      <div className="footer-hint">
+        資料儲存在這個瀏覽器中
+        <div className="footer-links">
+          <a href="./guide.html">使用說明</a>
+          <span>·</span>
+          <a href="./guide.html#versions">版本紀錄</a>
+        </div>
+      </div>
     </div>
   );
 }

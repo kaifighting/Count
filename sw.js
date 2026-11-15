@@ -1,10 +1,11 @@
 // 小記帳 Service Worker - 讓 App 可以離線使用
-const CACHE_NAME = 'expense-tracker-v3';
+const CACHE_NAME = 'expense-tracker-v4';
 const ASSETS = [
   './',
   './index.html',
   './manifest.json',
   './gmail-sync-script.txt',
+  './guide.html',
   './icon-192.png',
   './icon-512.png'
 ];
