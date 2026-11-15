@@ -1,5 +1,5 @@
 // 小記帳 Service Worker - 讓 App 可以離線使用
-const CACHE_NAME = 'expense-tracker-v1';
+const CACHE_NAME = 'expense-tracker-v2';
 const ASSETS = [
   './',
   './index.html',
@@ -27,6 +27,21 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const req = event.request;
   if (req.method !== 'GET') return;
+
+  // App 本身的檔案：先抓最新版，沒網路才用快取（這樣更新才會送到手機上）
+  if (new URL(req.url).origin === self.location.origin) {
+    event.respondWith(
+      fetch(req).then((res) => {
+        if (res && res.status === 200) {
+          const clone = res.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(req, clone));
+        }
+        return res;
+      }).catch(() => caches.match(req, { ignoreSearch: true }))
+    );
+    return;
+  }
+
   event.respondWith(
     caches.match(req).then((cached) => {
       if (cached) return cached;

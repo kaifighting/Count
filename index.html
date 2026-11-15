@@ -245,6 +245,42 @@ input[type=number] { -moz-appearance: textfield; }
 
 .list-card { padding: 0; overflow: hidden; }
 
+.list-items { font-size: 11px; color: #B8B0A3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.notice {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 14px; margin-bottom: 16px;
+  border-radius: 12px; font-size: 13px;
+  background: #E8F5F3; color: #1F7A6F;
+}
+.notice.warn { background: #FDF0EC; color: #C8553A; }
+.notice-text { flex: 1; min-width: 0; word-break: break-all; }
+.notice-btn { font-size: 13px; font-weight: 600; color: inherit; text-decoration: underline; padding: 4px; flex-shrink: 0; }
+
+.sync-title { font-size: 15px; font-weight: 600; color: #264653; margin-bottom: 6px; }
+.sync-desc { font-size: 12px; color: #8D99AE; line-height: 1.6; margin-bottom: 12px; }
+.sync-steps { font-size: 12px; color: #264653; line-height: 1.8; padding-left: 18px; margin-bottom: 12px; }
+.sync-steps li { margin-bottom: 2px; }
+.sync-url {
+  font-family: "JetBrains Mono", monospace; font-size: 11px;
+  background: #F5EFE6; color: #264653; padding: 10px 12px; border-radius: 8px;
+  word-break: break-all; margin-bottom: 12px;
+}
+.sync-textarea {
+  width: 100%; min-height: 72px; resize: vertical;
+  font-family: inherit; font-size: 13px; color: #264653;
+  border: 1px solid rgba(38, 70, 83, 0.12); border-radius: 10px;
+  padding: 10px 12px; outline: none; margin-bottom: 12px; background: #fff;
+}
+.ghost-btn {
+  width: 100%; padding: 12px 0; border-radius: 12px;
+  font-weight: 600; font-size: 14px;
+  background: #F5EFE6; color: #264653;
+}
+.ghost-btn:disabled { opacity: 0.4; }
+.sync-msg { margin-top: 12px; font-size: 12px; padding: 8px 12px; border-radius: 8px; background: #E8F5F3; color: #1F7A6F; }
+.sync-msg.warn { background: #FDF0EC; color: #C8553A; }
+
 .footer-hint { text-align: center; font-size: 12px; color: #B8B0A3; margin-top: 24px; }
 
 .slide-up { animation: slide-up 0.25s ease-out; }
@@ -282,7 +318,7 @@ input[type=number] { -moz-appearance: textfield; }
 <script crossorigin src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
 <script crossorigin src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
 <script crossorigin src="https://unpkg.com/prop-types@15.8.1/prop-types.min.js"></script>
-<script crossorigin src="https://unpkg.com/recharts@2.12.7/umd/Recharts.min.js"></script>
+<script crossorigin src="https://unpkg.com/recharts@2.12.7/umd/Recharts.js"></script>
 <script src="https://unpkg.com/@babel/standalone@7.24.7/babel.min.js"></script>
 
 <script type="text/babel" data-presets="react">
@@ -302,14 +338,15 @@ const PieIcon = (p) => <Icon {...p} d='<path d="M21.21 15.89A10 10 0 1 1 8 2.83"
 const ListIcon = (p) => <Icon {...p} d='<line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>' />;
 const TrendUpIcon = (p) => <Icon {...p} d='<polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>' />;
 const CalIcon = (p) => <Icon {...p} d='<rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>' />;
+const SyncIcon = (p) => <Icon {...p} d='<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>' />;
 const XIcon = (p) => <Icon {...p} d='<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>' />;
 
 const CATEGORIES = [
   { id: 'food', name: '餐飲', emoji: '🍜', color: '#E76F51', keywords: ['早餐','午餐','晚餐','宵夜','飲料','咖啡','奶茶','便當','麵','飯','吃','喝','茶','飯糰','麥當勞','星巴克','火鍋','燒烤','壽司','拉麵','超商','7-11','全家','小七'] },
-  { id: 'transport', name: '交通', emoji: '🚌', color: '#F4A261', keywords: ['捷運','公車','計程車','高鐵','火車','油錢','加油','停車','uber','機車','悠遊卡','客運','車票'] },
-  { id: 'shopping', name: '購物', emoji: '🛍️', color: '#E9C46A', keywords: ['衣服','鞋子','買','購物','電子','3c','蝦皮','pchome','網購','包包','化妝品'] },
+  { id: 'transport', name: '交通', emoji: '🚌', color: '#F4A261', keywords: ['捷運','公車','計程車','高鐵','火車','油錢','加油','停車','uber','機車','悠遊卡','客運','車票','中油','台灣大車隊','高速鐵路'] },
+  { id: 'shopping', name: '購物', emoji: '🛍️', color: '#E9C46A', keywords: ['衣服','鞋子','買','購物','電子','3c','蝦皮','pchome','網購','包包','化妝品','momo','富邦媒體','網路家庭'] },
   { id: 'entertain', name: '娛樂', emoji: '🎮', color: '#2A9D8F', keywords: ['電影','遊戲','ktv','演唱會','netflix','steam','訂閱','spotify','娛樂'] },
-  { id: 'life', name: '生活', emoji: '🏠', color: '#264653', keywords: ['水電','房租','日用品','洗衣','家用','網路','電話','電信'] },
+  { id: 'life', name: '生活', emoji: '🏠', color: '#264653', keywords: ['水電','房租','日用品','洗衣','家用','網路','電話','電信','全聯','家樂福','好市多','costco','大潤發','愛買','寶雅','屈臣氏','康是美'] },
   { id: 'study', name: '教育', emoji: '📚', color: '#457B9D', keywords: ['學費','補習','課本','文具','書','參考書','講義','考試'] },
   { id: 'health', name: '醫療', emoji: '💊', color: '#A8DADC', keywords: ['醫院','藥','看病','診所','牙醫','健保'] },
   { id: 'other', name: '其他', emoji: '✏️', color: '#8D99AE', keywords: [] },
@@ -339,6 +376,150 @@ const dateKey = (d) => {
 };
 
 const STORAGE_KEY = 'expense_tracker_data_v1';
+const SEEN_KEY = 'expense_tracker_notif_seen_v1';
+
+// ===== 刷卡通知解析 =====
+// 不是消費的通知（驗證碼、帳單、退款…）直接略過
+const NOTIF_SKIP_RE = /驗證碼|OTP|應繳|帳單|繳款|退款|退貨|刷退|取消交易|存入|轉入|登入/i;
+const NUM = '(\\d{1,3}(?:,\\d{3})+|\\d+)(\\.\\d+)?';
+const AMOUNT_RES = [
+  new RegExp('(?:NT\\$|NTD|TWD|新[臺台]幣|[臺台]幣|＄|\\$)\\s*' + NUM, 'i'),
+  new RegExp(NUM + '\\s*元'),
+  new RegExp('(?:消費|金額|支付|付款|扣款|刷卡)[^\\d]{0,6}' + NUM + '(?![\\d/:：年月])'),
+];
+const FOREIGN_RE = /\b(USD|JPY|EUR|KRW|CNY|HKD|GBP|SGD|THB|AUD)\b|美元|美金|日圓|日幣|歐元|韓元|港幣/i;
+
+const cleanMerchant = (s) => s
+  .replace(/\d{1,4}[\/\-.年]\d{1,2}(?:[\/\-.月]\d{1,2}日?)?/g, ' ')
+  .replace(/\d{1,2}[:：]\d{2}(?:[:：]\d{2})?/g, ' ')
+  .replace(/末[四4]碼\s*\d{4}|卡號[\d*＊xX\-]+/g, ' ')
+  .replace(/(?:NT\$|NTD|TWD|新[臺台]幣)[\d,.\s]*元?/gi, ' ')
+  .replace(/\s+/g, ' ')
+  .replace(/^[\s,，:：\-於在]+|[\s,，:：\-]+$/g, '');
+
+const findMerchant = (text) => {
+  const labeled = text.match(/(?:商店|特店|店家|商家|消費地點)\s*[:：]?\s*([^\s，,。；;、]{2,30})/);
+  if (labeled) { const m = cleanMerchant(labeled[1]); if (m) return m; }
+  const re = /[於在]\s*([^，,。；;]{1,40}?)\s*(?:刷卡|消費|交易|付款|扣款|支付)/g;
+  let hit;
+  while ((hit = re.exec(text))) {
+    const m = cleanMerchant(hit[1]);
+    if (m && !/^\d+$/.test(m)) return m;
+  }
+  const paren = text.match(/[（(【]([^）)】]{2,30})[）)】]/);
+  if (paren) { const m = cleanMerchant(paren[1]); if (m && !/^\d+$/.test(m)) return m; }
+  return '';
+};
+
+const parseNotification = (raw) => {
+  const text = String(raw || '').replace(/\s+/g, ' ').trim();
+  if (!text) return { error: '通知內容是空的' };
+  if (NOTIF_SKIP_RE.test(text)) return { error: '這則看起來不是消費通知，沒有記帳' };
+  // 先拿掉卡號末四碼、日期、時間，免得被當成金額
+  const body = text
+    .replace(/末\s*[四4]\s*碼\s*[:：]?\s*\d{4}|卡號\s*[:：]?\s*[\d*＊xX\-]+/g, ' ')
+    .replace(/\d{4}\.\d{1,2}\.\d{1,2}|\d{1,4}[\/\-年]\d{1,2}(?:[\/\-月]\d{1,2}日?)?/g, ' ')
+    .replace(/\d{1,2}[:：]\d{2}(?:[:：]\d{2})?/g, ' ');
+  let amount = 0;
+  for (const re of AMOUNT_RES) {
+    const m = body.match(re);
+    if (m) { amount = parseFloat(m[1].replace(/,/g, '') + (m[2] || '')); if (amount > 0) break; }
+  }
+  if (!(amount > 0)) return { error: '抓不到金額，沒有記帳' };
+  const merchant = findMerchant(text);
+  const foreign = !AMOUNT_RES[0].test(text) && text.match(FOREIGN_RE);
+  const description = (merchant || '刷卡消費') + (foreign ? `（${foreign[0]}，請確認金額）` : '');
+  return { amount, description, category: classify(merchant) };
+};
+
+// 網址 ?notif=通知文字 ：自動化 App（例如 MacroDroid）收到銀行推播時開啟這個網址
+const readNotifParam = () => {
+  const href = window.location.href;
+  const i = href.indexOf('notif=');
+  if (i < 0 || !/[?&]notif=/.test(href)) return null;
+  const rawText = href.slice(i + 6);
+  try { return decodeURIComponent(rawText.replace(/\+/g, ' ')); } catch (e) { return rawText; }
+};
+
+// 同一則通知在 2 分鐘內重複送來就不再記一次
+const isDuplicateNotif = (text) => {
+  try {
+    const now = Date.now();
+    const seen = (JSON.parse(localStorage.getItem(SEEN_KEY)) || []).filter(x => now - x.t < 120000);
+    const dup = seen.some(x => x.text === text);
+    if (!dup) seen.push({ text, t: now });
+    localStorage.setItem(SEEN_KEY, JSON.stringify(seen));
+    return dup;
+  } catch (e) { return false; }
+};
+
+// ===== 載具發票明細匯入（財政部電子發票平台的 M|…、D|… 格式）=====
+const parseInvoiceDate = (s) => {
+  let y, m, d;
+  if (/^\d{8}$/.test(s)) { y = +s.slice(0, 4); m = +s.slice(4, 6); d = +s.slice(6, 8); }
+  else if (/^\d{7}$/.test(s)) { y = +s.slice(0, 3) + 1911; m = +s.slice(3, 5); d = +s.slice(5, 7); }
+  else {
+    const p = s.match(/^(\d{2,4})[\/\-.](\d{1,2})[\/\-.](\d{1,2})/);
+    if (!p) return null;
+    y = +p[1]; if (y < 1000) y += 1911; m = +p[2]; d = +p[3];
+  }
+  const dt = new Date(y, m - 1, d, 12, 0, 0);
+  return isNaN(dt) || dt.getMonth() !== m - 1 ? null : dt;
+};
+
+const parseInvoiceCsv = (text) => {
+  const invoices = [];
+  const items = {};
+  text.split(/\r?\n/).forEach(line => {
+    const f = line.replace(/^﻿/, '').split('|').map(x => x.trim());
+    if (f[0] === 'M' && f.length >= 8) {
+      const date = parseInvoiceDate(f[3]);
+      const total = parseFloat(String(f[7]).replace(/,/g, ''));
+      if (!date || !(total > 0) || !f[6]) return;
+      if (/作廢/.test(f[8] || '')) return;
+      invoices.push({ no: f[6], date, shop: f[5], total });
+    } else if (f[0] === 'D' && f.length >= 4 && f[3]) {
+      (items[f[1]] = items[f[1]] || []).push(f[3]);
+    }
+  });
+  return invoices.map(v => ({ ...v, items: items[v.no] || [] }));
+};
+
+const shortShop = (name) => (name || '').split(/股份有限公司|有限公司/)[0].trim() || name || '發票消費';
+
+// 把發票併進現有紀錄：同一張發票不重複；同一天同金額的刷卡通知視為同一筆
+const mergeInvoices = (expenses, invoices) => {
+  const list = expenses.map(e => ({ ...e }));
+  const known = new Set(list.filter(e => e.invoiceNo).map(e => e.invoiceNo));
+  let added = 0, merged = 0, skipped = 0;
+  invoices.forEach(v => {
+    if (known.has(v.no)) { skipped++; return; }
+    known.add(v.no);
+    const shop = shortShop(v.shop);
+    let category = classify(shop);
+    if (category === 'other') category = classify(v.items.join(' '));
+    const twin = list.find(e => e.source === 'notif' && !e.invoiceNo &&
+      Math.round(e.amount) === Math.round(v.total) && dateKey(e.date) === dateKey(v.date));
+    if (twin) {
+      twin.invoiceNo = v.no; twin.items = v.items;
+      if (twin.description.startsWith('刷卡消費')) twin.description = shop;
+      if (twin.category === 'other') twin.category = category;
+      merged++;
+    } else {
+      list.push({ id: Date.now() + Math.random(), amount: v.total, description: shop, category,
+        date: v.date.toISOString(), source: 'invoice', invoiceNo: v.no, items: v.items });
+      added++;
+    }
+  });
+  list.sort((a, b) => new Date(b.date) - new Date(a.date));
+  return { list, added, merged, skipped };
+};
+
+const decodeFile = async (file) => {
+  const buf = await file.arrayBuffer();
+  try { return new TextDecoder('utf-8', { fatal: true }).decode(buf); }
+  catch (e) { return new TextDecoder('big5').decode(buf); }
+};
 
 function App() {
   const [expenses, setExpenses] = useState([]);
@@ -352,12 +533,35 @@ function App() {
   const [lastHeard, setLastHeard] = useState('');
   const [activeTab, setActiveTab] = useState('entry');
   const recognitionRef = useRef(null);
+  const [notice, setNotice] = useState(null);
+  const [pasteText, setPasteText] = useState('');
+  const [pasteMsg, setPasteMsg] = useState(null);
+  const [importMsg, setImportMsg] = useState(null);
+  const [copied, setCopied] = useState(false);
+  const fileRef = useRef(null);
 
   useEffect(() => {
+    let list = [];
     try {
       const s = localStorage.getItem(STORAGE_KEY);
-      if (s) setExpenses(JSON.parse(s));
+      if (s) list = JSON.parse(s) || [];
     } catch(e) {}
+    // 由通知自動化開啟（?notif=…）時，直接記一筆
+    const raw = readNotifParam();
+    if (raw !== null) {
+      try { window.history.replaceState(null, '', window.location.pathname); } catch(e) {}
+      if (!isDuplicateNotif(raw)) {
+        const p = parseNotification(raw);
+        if (p.error) setNotice({ warn: true, text: `${p.error}：「${raw.slice(0, 60)}」` });
+        else {
+          const item = { id: Date.now() + Math.random(), amount: p.amount, description: p.description,
+            category: p.category, date: new Date().toISOString(), source: 'notif' };
+          list = [item, ...list];
+          setNotice({ text: `已從通知記下：${p.description} NT$ ${fmt(p.amount)}`, undoId: item.id });
+        }
+      }
+    }
+    setExpenses(list);
     setLoaded(true);
   }, []);
 
@@ -390,12 +594,46 @@ function App() {
     recognitionRef.current = rec;
   }, []);
 
-  const addExpense = (amt, desc, cat) => {
-    setExpenses(prev => [{
+  const addExpense = (amt, desc, cat, source) => {
+    const item = {
       id: Date.now() + Math.random(),
       amount: amt, description: desc, category: cat,
       date: new Date().toISOString()
-    }, ...prev]);
+    };
+    if (source) item.source = source;
+    setExpenses(prev => [item, ...prev]);
+    return item.id;
+  };
+
+  const handlePasteNotif = () => {
+    const p = parseNotification(pasteText);
+    if (p.error) { setPasteMsg({ warn: true, text: p.error }); return; }
+    addExpense(p.amount, p.description, p.category, 'notif');
+    const cat = CATEGORIES.find(c => c.id === p.category);
+    setPasteMsg({ text: `✓ 已記下：${p.description} NT$ ${fmt(p.amount)}（${cat.name}）` });
+    setPasteText('');
+  };
+
+  const handleInvoiceFile = async (ev) => {
+    const file = ev.target.files && ev.target.files[0];
+    ev.target.value = '';
+    if (!file) return;
+    try {
+      const invoices = parseInvoiceCsv(await decodeFile(file));
+      if (!invoices.length) { setImportMsg({ warn: true, text: '這個檔案裡讀不到發票資料，格式可能和預期不同' }); return; }
+      const r = mergeInvoices(expenses, invoices);
+      setExpenses(r.list);
+      const parts = [`新增 ${r.added} 筆`];
+      if (r.merged) parts.push(`與刷卡通知合併 ${r.merged} 筆`);
+      if (r.skipped) parts.push(`略過已匯入 ${r.skipped} 筆`);
+      setImportMsg({ text: `✓ ${parts.join('、')}` });
+    } catch (e) { setImportMsg({ warn: true, text: '讀取檔案失敗' }); }
+  };
+
+  const notifUrl = `${window.location.origin}${window.location.pathname}?notif=`;
+  const copyNotifUrl = () => {
+    if (!navigator.clipboard) return;
+    navigator.clipboard.writeText(notifUrl).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1500); }).catch(() => {});
   };
 
   const handleManualAdd = () => {
@@ -456,6 +694,14 @@ function App() {
         <div className="divider" />
       </header>
 
+      {notice && (
+        <div className={`notice slide-up ${notice.warn ? 'warn' : ''}`}>
+          <span className="notice-text">{notice.text}</span>
+          {notice.undoId && <button className="notice-btn" onClick={() => { deleteExpense(notice.undoId); setNotice(null); }}>復原</button>}
+          <button className="notice-btn" style={{textDecoration:'none'}} onClick={() => setNotice(null)}><XIcon size={14} /></button>
+        </div>
+      )}
+
       <div className="card slide-up">
         <div className="view-switch">
           {[{id:'today',label:'今日'},{id:'week',label:'本週'},{id:'month',label:'本月'}].map(v => (
@@ -480,7 +726,8 @@ function App() {
         {[
           {id:'entry',label:'記一筆',Icon:PlusIcon},
           {id:'charts',label:'圖表',Icon:PieIcon},
-          {id:'list',label:'明細',Icon:ListIcon}
+          {id:'list',label:'明細',Icon:ListIcon},
+          {id:'sync',label:'匯入',Icon:SyncIcon}
         ].map(t => (
           <button key={t.id} className={`tab-btn ${activeTab===t.id?'active':''}`} onClick={() => setActiveTab(t.id)}>
             <t.Icon size={15} />{t.label}
@@ -623,7 +870,8 @@ function App() {
                   <div className="list-icon" style={{background: cat.color + '20'}}>{cat.emoji}</div>
                   <div className="list-body">
                     <div className="list-title">{e.description}</div>
-                    <div className="list-meta">{cat.name} · {d.getMonth()+1}/{d.getDate()} {String(d.getHours()).padStart(2,'0')}:{String(d.getMinutes()).padStart(2,'0')}</div>
+                    <div className="list-meta">{cat.name} · {d.getMonth()+1}/{d.getDate()}{e.source === 'invoice' ? ' · 發票' : ` ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}${e.source === 'notif' ? ' · 通知' : ''}`}</div>
+                    {e.items && e.items.length > 0 && <div className="list-items">{e.items.join('、')}</div>}
                   </div>
                   <div className="list-amount">-{fmt(e.amount)}</div>
                   <button className="delete-btn" onClick={() => deleteExpense(e.id)}><XIcon size={14} /></button>
@@ -631,6 +879,40 @@ function App() {
               );
             })
           )}
+        </div>
+      )}
+
+      {activeTab === 'sync' && (
+        <div className="slide-up">
+          <div className="card">
+            <div className="sync-title">載具發票匯入</div>
+            <div className="sync-desc">從財政部電子發票平台下載載具消費明細檔，選取後自動記帳。全聯會員卡、信用卡歸戶到手機條碼後，消費也會出現在裡面。同一張發票不會重複匯入。</div>
+            <input ref={fileRef} type="file" accept=".csv,.txt,text/csv,text/plain" style={{display:'none'}} onChange={handleInvoiceFile} />
+            <button className="ghost-btn" onClick={() => fileRef.current && fileRef.current.click()}>選擇明細檔</button>
+            {importMsg && <div className={`sync-msg ${importMsg.warn ? 'warn' : ''}`}>{importMsg.text}</div>}
+          </div>
+
+          <div className="card">
+            <div className="sync-title">刷卡通知記帳</div>
+            <div className="sync-desc">貼上銀行 App 的刷卡通知文字，自動抓出金額和店家。</div>
+            <textarea className="sync-textarea" value={pasteText} onChange={e => { setPasteText(e.target.value); setPasteMsg(null); }}
+              placeholder="例：您的信用卡於 11/15 在全聯實業消費 NT$350" />
+            <button className="ghost-btn" onClick={handlePasteNotif} disabled={!pasteText.trim()}>解析並記帳</button>
+            {pasteMsg && <div className={`sync-msg ${pasteMsg.warn ? 'warn' : ''}`}>{pasteMsg.text}</div>}
+          </div>
+
+          <div className="card">
+            <div className="sync-title">收到推播自動記帳（Android）</div>
+            <div className="sync-desc">用自動化 App（例如 MacroDroid）在銀行 App 跳出刷卡通知時，開啟下面的網址，就會自動記一筆。</div>
+            <ol className="sync-steps">
+              <li>安裝 MacroDroid，新增一個巨集</li>
+              <li>觸發條件選「收到通知」，App 選你的銀行 App</li>
+              <li>動作選「開啟網站」，網址貼上下面這串，並在最後面插入「通知內容」變數</li>
+              <li>勾選網址編碼（URL encode）後儲存</li>
+            </ol>
+            <div className="sync-url">{notifUrl}<span style={{color:'#E76F51'}}>［通知內容］</span></div>
+            <button className="ghost-btn" onClick={copyNotifUrl}>{copied ? '已複製' : '複製網址'}</button>
+          </div>
         </div>
       )}
 
